@@ -41,7 +41,7 @@ app.get("/books/", async (request, response) => {
 //Create user api:
 app.post("/users/", async (request, response) => {
   const { username, name, password, gender, location } = request.body;
-  const hashedPassword = bcrypt.hash(password, 10);
+  const hashedPassword = await bcrypt.hash(password, 10);
   const selectUserQuery = `
   SELECT 
     * 
@@ -71,5 +71,31 @@ app.post("/users/", async (request, response) => {
     */
     response.status(400); //HTTP status code for "Bad Request.
     response.send("User already exists");
+  }
+});
+
+//user login api
+app.post("/login/", async (request, response) => {
+  const { username, password } = request.body;
+  const selectUserQuery = `
+  SELECT 
+    * 
+  FROM 
+    user 
+  WHERE 
+    username = '${username}'`;
+  const dbUser = await db.get(selectUserQuery);
+  if (dbUser === undefined) {
+    //user doesn't exist
+    response.status(400);
+    response.send("Invalid user!");
+  } else {
+    const isPasswordMatch = await bcrypt.compare(password, dbUser.password); //gives true or false
+    if (isPasswordMatch === true) {
+      response.send("Login Success!");
+    } else {
+      response.status(400);
+      response.send("Invalid password!");
+    }
   }
 });
